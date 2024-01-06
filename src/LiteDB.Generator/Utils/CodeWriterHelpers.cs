@@ -5,8 +5,6 @@ static class CodeWriterHelpers
 {
 	public static void ProcessMethods(IEnumerable<IMethodSymbol?> symbols, List<string> listOfMembers, StringBuilder sb, ref bool isUnsafe)
 	{
-		//System.Diagnostics.Debugger.Launch();
-
 		foreach (var pm in symbols)
 		{
 			if (pm is null)
