@@ -1,6 +1,5 @@
 ﻿using LiteDB.Generator.Models;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Threading;
 
 namespace LiteDB.Generator;
@@ -60,11 +59,12 @@ namespace {{classInfo.ContainingNamespace}};
 			sb.Clear();
 		}
 	}
+
 	static InterfaceInformation emptyInterfaceInformation = new(default, ImmutableArray<string>.Empty, string.Empty, false);
 
 	static InterfaceInformation SemanticTransform(GeneratorAttributeSyntaxContext context, CancellationToken token)
 	{
-		//Debugger.Launch();
+
 		var targetNode = context.TargetNode;
 		var options = targetNode.SyntaxTree.Options;
 
@@ -117,76 +117,14 @@ namespace {{classInfo.ContainingNamespace}};
 		var sb = new StringBuilder();
 		var isUnsafe = false;
 
+		//System.Diagnostics.Debugger.Launch();
+
 		token.ThrowIfCancellationRequested();
-		ProcessMethods(publicMethods, listOfMembers, sb, ref isUnsafe);
+		CodeWriterHelpers.ProcessProperties(publicProperties, listOfMembers, sb, ref isUnsafe);
 		token.ThrowIfCancellationRequested();
-		ProcessProperties(publicProperties, listOfMembers, sb, ref isUnsafe);
+		CodeWriterHelpers.ProcessMethods(publicMethods, listOfMembers, sb, ref isUnsafe);
 
 		return new InterfaceInformation(classInfo, listOfMembers.ToImmutableArray(), baseInterface?.ToDisplayString() ?? string.Empty, isUnsafe);
-
-		static void ProcessMethods(IEnumerable<IMethodSymbol?> symbols, List<string> listOfMembers, StringBuilder sb, ref bool isUnsafe)
-		{
-			// System.IO.Stream RendStreamReader();
-			foreach (var pm in symbols)
-			{
-				if (pm is null)
-				{
-					continue;
-				}
-				var hasParameters = pm.Parameters.Length > 0;
-
-				sb.Append(pm.ReturnType.ToDisplayString())
-					.Append(' ')
-					.Append(pm.Name);
-
-				if (!hasParameters)
-				{
-					sb.Append("();");
-				}
-				else
-				{
-					sb.Append('(');
-
-					foreach (var p in pm.Parameters)
-					{
-						if (!isUnsafe)
-						{
-							isUnsafe = p.Type.TypeKind == TypeKind.Pointer;
-						}
-
-						sb.Append(p.ToDisplayString())
-							.Append(", ");
-					}
-					sb.Remove(sb.Length - 2, 2);
-					sb.Append(");");
-				}
-				listOfMembers.Add(sb.ToString());
-				sb.Clear();
-			}
-		}
-
-		static void ProcessProperties(IEnumerable<IPropertySymbol?> symbols, List<string> listOfMembers, StringBuilder sb, ref bool isUnsafe)
-		{
-			foreach (var p in symbols)
-			{
-				if (!isUnsafe)
-				{
-					isUnsafe = p?.Type.TypeKind == TypeKind.Pointer;
-				}
-
-				if (p is null)
-				{
-					continue;
-				}
-
-				sb.Append(p.Type.ToDisplayString())
-				.Append(' ')
-				.Append(p.Name)
-				.Append(" { get; set; }");
-				listOfMembers.Add(sb.ToString());
-				sb.Clear();
-			}
-		}
 
 		static INamedTypeSymbol? GetInheritedInterface(GeneratorAttributeSyntaxContext context)
 		{
@@ -198,9 +136,8 @@ namespace {{classInfo.ContainingNamespace}};
 
 			return context.SemanticModel.Compilation.GetTypeByMetadataName(ctorData);
 		}
-
 	}
 
 	static bool SyntaxPredicate(SyntaxNode node, CancellationToken _) =>
-		node is ClassDeclarationSyntax { AttributeLists.Count: > 0 } or StructDeclarationSyntax { AttributeLists.Count: > 0 };
+		node is TypeDeclarationSyntax { AttributeLists.Count: > 0 };
 }
